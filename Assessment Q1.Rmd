@@ -1,0 +1,78 @@
+---
+title: "Data Science Placement Assessment Q1"
+author: "Sam Fansler"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(rvest)
+library(tidyverse)
+```
+
+# 1.
+
+## Scraping data from site
+```{r}
+document = read_html("https://en.wikipedia.org/wiki/List_of_natural_disasters_by_death_toll")
+
+#Extracting tables from site
+wiki_tables = document %>%
+  html_elements("table.wikitable.sortable") %>%
+  html_table()
+
+#Selecting specific tables
+century_20 = wiki_tables[[2]]
+century_21 = wiki_tables[[3]]
+
+#Ensuring tables look how I want
+head(century_20)
+head(century_21)
+```
+## Converting death toll to correct format
+```{r}
+
+
+century_20$death_no_plus = str_remove_all(century_20$`Death toll`, "[,+]")
+century_21$death_no_plus = str_remove_all(century_21$`Death toll`, "[,+]")
+
+
+century_20$death_no_punct = str_replace_all(century_20$death_no_plus, "[:punct:]", " ")
+century_21$death_no_punct = str_replace_all(century_21$death_no_plus, "[:punct:]", " ")
+
+century_20_clean = century_20 %>%
+  separate(death_no_punct, into = c("first", "second"), sep = " ") %>%
+  mutate(first_num = as.numeric(first),
+         second_num = as.numeric(second)) %>%
+  filter(second_num >= 50 | is.na(second_num)) %>%
+  mutate(midpoint = (first_num+second_num)/2) %>%
+  mutate(Deaths = ifelse(is.na(second), first_num, midpoint)) %>%
+  select(Year, Deaths, Event, `Countries affected`, Type, Date)
+
+century_21_clean = century_21 %>%
+  separate(death_no_punct, into = c("first", "second"), sep = " ") %>%
+  mutate(first_num = as.numeric(first),
+         second_num = as.numeric(second)) %>%
+  filter(second_num >= 50 | is.na(second_num)) %>%
+  mutate(midpoint = (first_num+second_num)/2) %>%
+  mutate(Deaths = ifelse(is.na(second), first_num, midpoint)) %>%
+  select(Year, Deaths, Event, `Countries affected`, Type, Date)
+
+```
+
+## Merging 20th and 21st century data, plotting death toll by year/disaster type
+```{r}
+
+disasters = rbind(century_20_clean, century_21_clean)
+
+disasters %>%
+  ggplot(aes(x = Year, y = Deaths, color = Type)) + geom_point() + theme_bw() + labs(title = "Death Tolls of Disasters by Year and Type")
+
+#It is difficult to see the variation in many disasters because of the high death toll of the 1931 China floods.
+#I will create another plot excluding that point to give a better picture of the rest of the disasters, only for visual purposes.
+
+disasters %>%
+  filter(Deaths < 1000000) %>%
+  ggplot(aes(x = Year, y = Deaths, color = Type)) + geom_point() + theme_bw() + scale_y_continuous(labels = function(x) format(x, scientific = F)) + labs(title = "Death Tolls of Disasters by Year and Type (Excluding 1931 China Flood)")
+
+```

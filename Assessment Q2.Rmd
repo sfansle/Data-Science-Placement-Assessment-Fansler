@@ -1,0 +1,65 @@
+---
+title: "Data Science Placement Assessment Q2"
+author: "Sam Fansler"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# 2.
+## Creating function
+```{r}
+
+gradient = function(x, y, learning_rate, n_iter) {
+  b = 0
+  for(i in 1:n_iter){
+    b = b - learning_rate * (-2*(y - c(b)*x) %*% x) #Iterating to find the optimal b
+  }
+  return(b)
+}
+
+```
+
+##Testing function
+```{r}
+set.seed(456)
+x = rnorm(20, mean = 20, sd = 10)
+
+set.seed(13)
+y = rnorm(20, mean = 30, sd = 5)
+
+#Finding true b
+
+true_b = x%*%y/norm(x, type = "2")^2
+
+
+##Testing algorithm
+learning_rate = .000001
+n_iter <- 1000
+
+gradient(x, y, learning_rate , n_iter)
+true_b
+```
+These values match, so the algorithm successfully minimized the loss function.
+
+##Trying different learning rates
+```{r}
+#Let's try a larger learning rate
+learning_rate_2 = 0.001
+gradient(x, y, learning_rate_2, n_iter)
+```
+The algorithm failed to converge because the learning rate e was too large, so it likely overshot the true value.
+
+```{r}
+#Let's try a smaller learning rate
+learning_rate_3 = 0.00000001
+gradient(x, y, learning_rate_3, n_iter)
+true_b
+```
+The algorithm converged to a value, but not the optimal b. The loss function wasn't minimized because the learning rate e was too small, so it did not have enough iterations to reach the optimal b.
+
+Overall, the algorithm's performance heavily depends on the learning rate e. If too large, the algorithm will overshoot the optimal b and not converge. If too small, the optimal b will take too long to reach because the iterations do not change the b value enough. This can be fixed by increased the number of iterations, but it is better to tune the learning rate to achieve the optimal b efficiently without overshooting it.
